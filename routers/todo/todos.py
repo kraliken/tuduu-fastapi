@@ -5,6 +5,7 @@ from database.models import Todo, TodoCreate, TodoUpdate, User
 from database.connection import SessionDep
 from sqlmodel import select, func, case
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
 router = APIRouter(prefix="/todo", tags=["todo"])
 
@@ -55,8 +56,8 @@ def get_upcoming_todos(
     current_user: Annotated[User, Depends(get_current_user)],
     session: SessionDep,
 ):
-
-    now_local = datetime.now()
+    HU_TZ = ZoneInfo("Europe/Budapest")
+    now_local = datetime.now(HU_TZ)
     today = now_local.date()
 
     tomorrow = today + timedelta(days=1)
