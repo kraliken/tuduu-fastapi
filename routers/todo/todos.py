@@ -6,6 +6,7 @@ from database.connection import SessionDep
 from sqlmodel import select, func, case
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
+from collections import defaultdict
 
 router = APIRouter(prefix="/todo", tags=["todo"])
 
@@ -157,13 +158,60 @@ def get_todo_stats(
     ]
 
 
+@router.get("/today")
+def get_todays_todos(
+    current_user: Annotated[User, Depends(get_current_user)], session: SessionDep
+):
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+
+    done_stmt = select(Todo).where(
+        Todo.user_id == current_user.id,
+        Todo.status == "done",
+        Todo.completed_at >= today_start,
+        Todo.completed_at < today_end,
+    )
+    done_todos = session.exec(done_stmt).all()
+
+    due_stmt = select(Todo).where(
+        Todo.user_id == current_user.id,
+        Todo.status != "done",
+        Todo.deadline >= today_start,
+        Todo.deadline < today_end,
+    )
+    due_todos = session.exec(due_stmt).all()
+
+    def group_by_category(todos):
+        grouped = defaultdict(list)
+        for todo in todos:
+            grouped[todo.category].append(todo)
+
+        # minden kategória szerepeljen (még ha üres is)
+        for category in ["personal", "work", "development"]:
+            grouped.setdefault(category, [])
+        return dict(grouped)
+
+    return {
+        "done_today": group_by_category(done_todos),
+        "due_today": group_by_category(due_todos),
+    }
+
+
 @router.post("/create", status_code=status.HTTP_201_CREATED)
 def create_todo(
     todo: TodoCreate,
     current_user: Annotated[User, Depends(get_current_user)],
     session: SessionDep,
 ):
-    db_todo = Todo(**todo.model_dump(), user_id=current_user.id)
+    todo_data = todo.model_dump()
+
+    completed_at = None
+    if todo_data.get("status") == "done":
+        completed_at = datetime.now(timezone.utc)
+
+    db_todo = Todo(**todo_data, user_id=current_user.id, completed_at=completed_at)
+
     session.add(db_todo)
     session.commit()
     session.refresh(db_todo)
@@ -182,13 +230,20 @@ def update_todo(
     if not db_todo or db_todo.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Todo not found")
 
-    for field, value in todo_update.model_dump(exclude_unset=True).items():
+    update_data = todo_update.model_dump(exclude_unset=True)
+
+    new_status = update_data.get("status")
+    if new_status is not None:
+        if new_status == "done":
+            db_todo.completed_at = datetime.now(timezone.utc)
+        else:
+            db_todo.completed_at = None
+
+    for field, value in update_data.items():
         setattr(db_todo, field, value)
 
     db_todo.modified_at = datetime.now(timezone.utc)
 
-    # db_todo.title = todo_update.title
-    # db_todo.modify_at = datetime.now(timezone.utc)
     session.add(db_todo)
     session.commit()
     session.refresh(db_todo)

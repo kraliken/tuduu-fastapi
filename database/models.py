@@ -66,7 +66,8 @@ class Todo(SQLModel, table=True):
     status: Status = Field(default=Status.backlog)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     modified_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    deadline: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    deadline: datetime
     priority: Optional[int] = Field(default=1, ge=1, le=5)
     archived: bool = Field(default=False)
 
@@ -79,7 +80,7 @@ class TodoCreate(SQLModel):
     description: Optional[str] = None
     category: Optional[Category] = Category.personal
     status: Optional[Status] = Status.backlog
-    deadline: Optional[datetime] = None
+    deadline: datetime
     priority: Optional[int] = 1
 
 
