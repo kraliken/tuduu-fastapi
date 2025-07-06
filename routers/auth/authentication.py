@@ -32,7 +32,10 @@ def create_user(user: UserCreate, session: SessionDep):
     session.refresh(db_user)
 
     return UserRead(
-        id=db_user.id, username=db_user.username, created_at=db_user.created_at
+        id=db_user.id,
+        username=db_user.username,
+        role=db_user.role,
+        created_at=db_user.created_at,
     )
 
 

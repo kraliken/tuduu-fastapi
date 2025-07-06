@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from routers.auth import authentication
 from routers.admin import users
 from routers.todo import todos
+from routers.vodafone import vodafone
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -40,3 +41,4 @@ app.add_middleware(
 app.include_router(authentication.router)
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(todos.router, prefix="/api/v1")
+app.include_router(vodafone.router, prefix="/api/v1")
