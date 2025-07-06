@@ -92,3 +92,55 @@ class TodoUpdate(SQLModel):
     deadline: Optional[datetime] = None
     priority: Optional[int] = None
     archived: Optional[bool] = None
+
+
+class PhoneBook(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    phone_number: str = Field(unique=True, max_length=20)
+    owner: Optional[str] = Field(default=None, max_length=100)
+
+
+class LedgerAccount(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str = Field(max_length=25)
+    account_number: str = Field(index=True, max_length=10)
+
+    mappings: List["TeszorMapping"] = Relationship(back_populates="ledger_account")
+
+
+class VatSetting(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    rate: Optional[str] = Field(default=None, max_length=4)
+    code: str = Field(max_length=12)
+
+    mappings: List["TeszorMapping"] = Relationship(back_populates="vat_setting")
+
+
+class TeszorCode(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    teszor_code: str = Field(max_length=20)
+
+    mappings: List["TeszorMapping"] = Relationship(back_populates="teszor_code")
+
+
+class TeszorMapping(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    teszor_code_id: int = Field(foreign_key="teszorcode.id")
+    vatsetting_id: int = Field(foreign_key="vatsetting.id")
+    ledgeraccount_id: int = Field(foreign_key="ledgeraccount.id")
+
+    teszor_code: Optional["TeszorCode"] = Relationship()
+    vat_setting: Optional["VatSetting"] = Relationship()
+    ledger_account: Optional["LedgerAccount"] = Relationship()
+
+    # ledgeraccount_id: int = Field(foreign_key="ledgeraccount.id")
+    # vatsetting_id: int = Field(foreign_key="vatsetting.id")
+
+    # ledger_account: Optional["LedgerAccount"] = Relationship(
+    #     back_populates="teszor_codes"
+    # )
+    # vat_setting: Optional["VatSetting"] = Relationship(back_populates="teszor_codes")
+
+    # teszor_codes: List["TeszorCode"] = Relationship(back_populates="vat_setting")
+
+    # teszor_codes: List["TeszorCode"] = Relationship(back_populates="ledger_account")

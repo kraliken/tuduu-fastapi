@@ -4,9 +4,6 @@ from fastapi import Depends
 from urllib.parse import quote_plus
 
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 username = os.getenv("DB_USERNAME")
 password = quote_plus(os.getenv("DB_PASSWORD"))
